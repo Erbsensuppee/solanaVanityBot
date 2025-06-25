@@ -36,6 +36,8 @@ async function generateVanityAddress() {
     const secretKeyBase58 = bs58.default.encode(keypair.secretKey);
     attempts++;
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    const durationHours = ((Date.now() - startTime) / (1000 * 60 * 60)).toFixed(4);  // hours, with 4 decimals
+
 
     // 📌 Teilpräfix-Treffer speichern
     for (const prefix of PARTIAL_PREFIXES) {
@@ -50,7 +52,7 @@ async function generateVanityAddress() {
           publicKey: publicKey,
           secretKeyBase58: secretKeyBase58,
           attempts: attempts,
-          durationSeconds: parseFloat(duration)
+          duration: parseFloat(durationHours)
         };
         fs.writeFileSync(filename, JSON.stringify(walletData, null, 2));
         console.log(`💾 Partial match (${matchedPrefix}) saved to ${filename}`);
@@ -68,7 +70,7 @@ async function generateVanityAddress() {
         `*Prefix:* \`${prefix}\`\n` +
         `*Public:* \`${publicKey}\`\n` +
         `*Versuche:* ${attempts.toLocaleString()}\n` +
-        `*Dauer:* ${duration}s`
+        `*Dauer:* ${durationHours}h`
         );
       }
     }
@@ -81,7 +83,7 @@ async function generateVanityAddress() {
     // 📨 Fortschrittsmeldung an Telegram
     if (attempts % 1000000 === 0) {
       await notifyTelegram(
-        `⏳ Vanity-Wallet Suche...\nVersuche: ${attempts}\nDauer: ${duration}s`
+        `⏳ Vanity-Wallet Suche...\nVersuche: ${attempts}\nDauer: ${durationHours}h`
       );
     }
   }
