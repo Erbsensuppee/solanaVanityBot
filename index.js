@@ -39,17 +39,21 @@ async function generateVanityAddress() {
 
     // 📌 Teilpräfix-Treffer speichern
     for (const prefix of PARTIAL_PREFIXES) {
-    if (publicKey.toUpperCase().startsWith(prefix)) {
-        const filename = `wallet_${prefix}_${Date.now()}.json`;
+      const prefixLen = prefix.length;
+
+      if (publicKey.toUpperCase().startsWith(prefix)) {
+        const matchedPrefix = publicKey.substring(0, prefixLen);  // genau so, wie's im publicKey steht
+
+        const filename = `wallet_${matchedPrefix}_${Date.now()}.json`;
         const walletData = {
-          prefix: prefix,
+          prefix: matchedPrefix,
           publicKey: publicKey,
           secretKeyBase58: secretKeyBase58,
           attempts: attempts,
           durationSeconds: parseFloat(duration)
         };
         fs.writeFileSync(filename, JSON.stringify(walletData, null, 2));
-        console.log(`💾 Partial match (${prefix}) saved to ${filename}`);
+        console.log(`💾 Partial match (${matchedPrefix}) saved to ${filename}`);
 
 
         // ✨ Telegram-Meldung für jeden Treffer
