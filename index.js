@@ -39,7 +39,7 @@ async function generateVanityAddress() {
 
     // 📌 Teilpräfix-Treffer speichern
     for (const prefix of PARTIAL_PREFIXES) {
-      if (publicKey.startsWith(prefix)) {
+    if (publicKey.toUpperCase().startsWith(prefix)) {
         const filename = `wallet_${prefix}_${Date.now()}.json`;
         const walletData = {
           prefix: prefix,
