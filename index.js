@@ -43,7 +43,7 @@ async function generateVanityAddress() {
     for (const prefix of PARTIAL_PREFIXES) {
       const prefixLen = prefix.length;
 
-      if (publicKey.toUpperCase().startsWith(prefix)) {
+      if (publicKey.startsWith(prefix)) {
         const matchedPrefix = publicKey.substring(0, prefixLen);  // genau so, wie's im publicKey steht
 
         const filename = `wallet_${matchedPrefix}_${Date.now()}.json`;
@@ -81,7 +81,7 @@ async function generateVanityAddress() {
     }
 
     // 📨 Fortschrittsmeldung an Telegram
-    if (attempts % 1000000 === 0) {
+    if (attempts % 10000000 === 0) {
       await notifyTelegram(
         `⏳ Vanity-Wallet Suche...\nVersuche: ${attempts}\nDauer: ${durationHours}h`
       );
