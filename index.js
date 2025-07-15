@@ -18,14 +18,13 @@ async function notifyTelegram(text) {
     await axios.post(url, {
       chat_id: CHAT_ID,
       text: text,
-      parse_mode: 'Markdown'  // ⬅️ Wichtig für fette Schrift und Monospace
+      parse_mode: 'Markdown'
     });
     console.log("📨 Telegram-Nachricht gesendet");
   } catch (err) {
     console.error("⚠️  Telegram-Sendefehler:", err.message);
   }
 }
-
 
 async function generateVanityAddress() {
   await notifyTelegram("🚀 Vanity-Wallet Suche gestartet...");
@@ -36,29 +35,27 @@ async function generateVanityAddress() {
     const secretKeyBase58 = bs58.default.encode(keypair.secretKey);
     attempts++;
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    const durationHours = ((Date.now() - startTime) / (1000 * 60 * 60)).toFixed(4);  // hours, with 4 decimals
+    const durationHours = ((Date.now() - startTime) / (1000 * 60 * 60)).toFixed(4);
 
-
-    // 📌 Teilpräfix-Treffer speichern
     for (const prefix of PARTIAL_PREFIXES) {
       const prefixLen = prefix.length;
 
-     if (publicKey.toUpperCase().startsWith(prefix)) {
-        const matchedPrefix = publicKey.substring(0, prefixLen);  // genau so, wie's im publicKey steht
+      if (publicKey.toUpperCase().startsWith(prefix)) {
+        const matchedPrefix = publicKey.substring(0, prefixLen);
 
-        const filename = `wallet_${matchedPrefix}_${Date.now()}.json`;
         const walletData = {
           prefix: matchedPrefix,
           publicKey: publicKey,
           secretKeyBase58: secretKeyBase58,
           attempts: attempts,
-          duration: parseFloat(durationHours)
+          durationHours: parseFloat(durationHours)
         };
-        fs.writeFileSync(filename, JSON.stringify(walletData, null, 2));
-        console.log(`💾 Partial match (${matchedPrefix}) saved to ${filename}`);
 
+        const filename = `wallet_${matchedPrefix.toUpperCase()}.jsonl`;
+        fs.appendFileSync(filename, JSON.stringify(walletData) + "\n");
 
-        // ✨ Telegram-Meldung für jeden Treffer
+        console.log(`💾 Partial match (${matchedPrefix}) appended to ${filename}`);
+
         const isFullMatch = prefix === TARGET_PREFIX;
         const emoji = isFullMatch ? "✅" : "✨";
         const label = isFullMatch ? "Volltreffer" : "Teiltreffer";
@@ -66,21 +63,19 @@ async function generateVanityAddress() {
         console.log(`${emoji} ${label} mit ${prefix} nach ${attempts} Versuchen!`);
 
         await notifyTelegram(
-        `${emoji} *${label} gefunden!*\n\n` +
-        `*Prefix:* \`${prefix}\`\n` +
-        `*Public:* \`${publicKey}\`\n` +
-        `*Versuche:* ${attempts.toLocaleString()}\n` +
-        `*Dauer:* ${durationHours}h`
+          `${emoji} *${label} gefunden!*\n\n` +
+          `*Prefix:* \`${prefix}\`\n` +
+          `*Public:* \`${publicKey}\`\n` +
+          `*Versuche:* ${attempts.toLocaleString()}\n` +
+          `*Dauer:* ${durationHours}h`
         );
       }
     }
 
-    // 📈 Fortschrittsanzeige
     if (attempts % 100000 === 0) {
       console.log(`🔁 ${attempts} attempts in ${duration}s`);
     }
 
-    // 📨 Fortschrittsmeldung an Telegram
     if (attempts % 10000000 === 0) {
       await notifyTelegram(
         `⏳ Vanity-Wallet Suche...\nVersuche: ${attempts}\nDauer: ${durationHours}h`
