@@ -22,3 +22,5 @@ cd solana-vanity-bot
 
 # Install required dependencies
 npm install dotenv @solana/web3.js bs58 axios
+
+# Quick PR test Sun 27 Jul 15:17:52 CEST 2025
