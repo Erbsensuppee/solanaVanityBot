@@ -5,3 +5,5 @@ CHAT_ID=your_chat_id_here
 # 🧩 Vanity-Wallet Konfiguration
 TARGET_PREFIX=MARIO
 PARTIAL_PREFIXES=MAR,MARI,MARIO
+PARTIAL_END_PREFIXES=pump,bonk;
+
