@@ -5,12 +5,20 @@ const fs = require('fs');
 const axios = require('axios');
 
 const TARGET_PREFIX = process.env.TARGET_PREFIX;
-const PARTIAL_PREFIXES = process.env.PARTIAL_PREFIXES.split(',').map(p => p.trim());
+
+const PARTIAL_PREFIXES = process.env.PARTIAL_PREFIXES
+  ? process.env.PARTIAL_PREFIXES.split(',').map(p => p.trim().toUpperCase())
+  : [];
+
+const PARTIAL_END_PREFIXES = process.env.PARTIAL_END_PREFIXES
+  ? process.env.PARTIAL_END_PREFIXES.split(',').map(s => s.trim())
+  : [];
+
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const CHAT_ID = process.env.CHAT_ID;
 
 let attempts = 0;
 const startTime = Date.now();
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const CHAT_ID = process.env.CHAT_ID;
 
 async function notifyTelegram(text) {
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -34,33 +42,32 @@ async function generateVanityAddress() {
     const publicKey = keypair.publicKey.toBase58();
     const secretKeyBase58 = bs58.default.encode(keypair.secretKey);
     attempts++;
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     const durationHours = ((Date.now() - startTime) / (1000 * 60 * 60)).toFixed(4);
 
+    const publicKeyUpper = publicKey.toUpperCase();
+    const publicKeyLower = publicKey;
+
+    // ✅ Check PREFIXES (startsWith)
     for (const prefix of PARTIAL_PREFIXES) {
-      const prefixLen = prefix.length;
-
-      if (publicKey.toUpperCase().startsWith(prefix)) {
-        const matchedPrefix = publicKey.substring(0, prefixLen);
-
+      if (publicKeyUpper.startsWith(prefix)) {
         const walletData = {
-          prefix: matchedPrefix,
-          publicKey: publicKey,
-          secretKeyBase58: secretKeyBase58,
-          attempts: attempts,
+          match: `start:${prefix}`,
+          publicKey,
+          secretKeyBase58,
+          attempts,
           durationHours: parseFloat(durationHours)
         };
 
-        const filename = `wallet_${matchedPrefix.toUpperCase()}.jsonl`;
+        const filename = `wallet_START_${prefix}.jsonl`;
         fs.appendFileSync(filename, JSON.stringify(walletData) + "\n");
 
-        console.log(`💾 Partial match (${matchedPrefix}) appended to ${filename}`);
+        console.log(`💾 Match (START: ${prefix}) -> ${filename}`);
 
-        const isFullMatch = prefix === TARGET_PREFIX;
+        const isFullMatch = prefix === TARGET_PREFIX?.toUpperCase();
         const emoji = isFullMatch ? "✅" : "✨";
-        const label = isFullMatch ? "Volltreffer" : "Teiltreffer";
-
-        console.log(`${emoji} ${label} mit ${prefix} nach ${attempts} Versuchen!`);
+        const label = isFullMatch ? "Volltreffer (Start)" : "Teiltreffer (Start)";
 
         await notifyTelegram(
           `${emoji} *${label} gefunden!*\n\n` +
@@ -72,8 +79,36 @@ async function generateVanityAddress() {
       }
     }
 
+    // ✅ Check SUFFIXES (endsWith)
+    for (const suffix of PARTIAL_END_PREFIXES) {
+      if (publicKeyLower.endsWith(suffix)) {
+        const walletData = {
+          match: `end:${suffix}`,
+          publicKey,
+          secretKeyBase58,
+          attempts,
+          durationHours: parseFloat(durationHours)
+        };
+
+        const filename = `wallet_END_${suffix.toUpperCase()}.jsonl`;
+        fs.appendFileSync(filename, JSON.stringify(walletData) + "\n");
+
+        console.log(`💾 Match (END: ${suffix}) -> ${filename}`);
+
+        const emoji = "✨";
+        const label = "Teiltreffer (Ende)";
+        await notifyTelegram(
+          `${emoji} *${label} gefunden!*\n\n` +
+          `*Suffix:* \`${suffix}\`\n` +
+          `*Public:* \`${publicKey}\`\n` +
+          `*Versuche:* ${attempts.toLocaleString()}\n` +
+          `*Dauer:* ${durationHours}h`
+        );
+      }
+    }
+
     if (attempts % 100000 === 0) {
-      console.log(`🔁 ${attempts} attempts in ${duration}s`);
+      console.log(`🔁 ${attempts} Versuche in ${duration}s`);
     }
 
     if (attempts % 10000000 === 0) {
